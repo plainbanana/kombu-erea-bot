@@ -181,6 +181,9 @@ func isContain(s []string, str string) bool {
 func parseAccountsToMention(accounts []*mastodon.Account) string {
 	var result string
 	for _, v := range accounts {
+		if v.Bot {
+			continue
+		}
 		s := strings.Split(v.URL, "/")
 		result += s[len(s)-1] + "@" + s[len(s)-2] + " "
 	}
