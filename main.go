@@ -131,10 +131,13 @@ func main() {
 		}
 
 		for _, v := range strings.Split(parseAccountsToMention(curFollowers), " ") {
-			c.PostStatus(context.Background(), &mastodon.Toot{
-				Status:     v + " " + statusText,
-				Visibility: "unlisted",
-			})
+			if v != "" {
+				c.PostStatus(context.Background(), &mastodon.Toot{
+					Status:     v + " " + statusText,
+					Visibility: "unlisted",
+				})
+
+			}
 		}
 	}
 }
