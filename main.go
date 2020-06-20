@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -34,6 +35,7 @@ var (
 
 const (
 	splatoon2API = "https://spla2.yuu26.com"
+	chacheFile   = "./api_chache.gob"
 )
 
 type splatoonRespSchedules struct {
@@ -57,7 +59,12 @@ type splatoonRespSchedules struct {
 		End      string    `json:"end"`
 		EndUtc   time.Time `json:"end_utc"`
 		EndT     int       `json:"end_t"`
+		Tooted   struct {
+			First   bool
+			Secound bool
+		}
 	} `json:"result"`
+	Timestamp time.Time
 }
 
 func init() {
@@ -101,48 +108,70 @@ func main() {
 	var statusText string
 
 	schedules := getSplatoon2GachiSchedules("gachi/schedule")
-	for _, v := range schedules.Result {
+	for i, v := range schedules.Result {
 		if v.Rule == "ガチエリア" && isContain(v.Maps, "コンブトラック") {
-			if time.Now().Add(time.Hour * 4).After(v.StartUtc) {
+			if time.Now().Add(time.Hour*2).After(v.StartUtc) && v.EndUtc.After(time.Now()) && !schedules.Result[i].Tooted.First {
 				statusText = statusText + "コンブエリア start at " +
 					v.StartUtc.In(timezone).Format("2006-01-02 15:03 -07:00") + " \n"
+				toot(statusText)
+				schedules.Result[i].Tooted.First = true
+				continue
+			}
+
+			if time.Now().Add(time.Minute*10).After(v.StartUtc) && v.EndUtc.After(time.Now()) && !schedules.Result[i].Tooted.Secound {
+				statusText = statusText + "コンブエリア soon start at " +
+					v.StartUtc.In(timezone).Format("2006-01-02 15:03 -07:00") + " \n"
+				toot(statusText)
+				schedules.Result[i].Tooted.Secound = true
 			}
 		}
 	}
+	storeRespToFile(schedules)
+}
 
-	if statusText != "" {
-		c := mastodon.NewClient(&mastodon.Config{
-			Server:       mastodonServer,
-			ClientID:     mastodonClientID,
-			ClientSecret: mastodonClientSecret,
-		})
-		err := c.Authenticate(context.Background(), mastodonAppYourEmail, mastodonAppYourPassword)
-		if err != nil {
-			log.Fatal(err)
-		}
+func toot(text string) {
+	c := mastodon.NewClient(&mastodon.Config{
+		Server:       mastodonServer,
+		ClientID:     mastodonClientID,
+		ClientSecret: mastodonClientSecret,
+	})
+	err := c.Authenticate(context.Background(), mastodonAppYourEmail, mastodonAppYourPassword)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-		curUser, err := c.GetAccountCurrentUser(context.Background())
-		if !errors.Is(err, nil) {
-			log.Fatal(err)
-		}
-		curFollowers, err := c.GetAccountFollowers(context.Background(), curUser.ID, nil)
-		if !errors.Is(err, nil) {
-			log.Fatal(err)
-		}
+	curUser, err := c.GetAccountCurrentUser(context.Background())
+	if !errors.Is(err, nil) {
+		log.Fatal(err)
+	}
+	curFollowers, err := c.GetAccountFollowers(context.Background(), curUser.ID, nil)
+	if !errors.Is(err, nil) {
+		log.Fatal(err)
+	}
 
-		for _, v := range strings.Split(parseAccountsToMention(curFollowers), " ") {
-			if v != "" {
-				c.PostStatus(context.Background(), &mastodon.Toot{
-					Status:     v + " " + statusText,
-					Visibility: "unlisted",
-				})
-
-			}
+	for _, v := range strings.Split(parseAccountsToMention(curFollowers), " ") {
+		if v != "" {
+			c.PostStatus(context.Background(), &mastodon.Toot{
+				Status:     v + " " + text,
+				Visibility: "unlisted",
+			})
+			log.Println("toot", v+" "+text)
 		}
 	}
 }
 
 func getSplatoon2GachiSchedules(uri string) splatoonRespSchedules {
+	if oldResp := restoreRespFromFile(); oldResp.Timestamp.Add(time.Hour*12).After(time.Now()) && !oldResp.Timestamp.IsZero() {
+		log.Println("return old response", oldResp.Timestamp, time.Now())
+		return oldResp
+	}
+	log.Println("call API")
+	resp := getFromSpla2API(uri)
+	resp.Timestamp = time.Now()
+	return resp
+}
+
+func getFromSpla2API(uri string) splatoonRespSchedules {
 	base, err := url.Parse(splatoon2API)
 	if !errors.Is(err, nil) {
 		log.Fatal(err)
@@ -173,6 +202,32 @@ func getSplatoon2GachiSchedules(uri string) splatoonRespSchedules {
 	}
 
 	return result
+}
+
+func storeRespToFile(b splatoonRespSchedules) {
+	f, err := os.Create(chacheFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	enc := gob.NewEncoder(f)
+	if err := enc.Encode(b); !errors.Is(err, nil) {
+		log.Fatal(err)
+	}
+}
+
+func restoreRespFromFile() splatoonRespSchedules {
+	f, err := os.Open(chacheFile)
+	if err != nil {
+		return splatoonRespSchedules{}
+	}
+	defer f.Close()
+	var resp splatoonRespSchedules
+	dec := gob.NewDecoder(f)
+	if err := dec.Decode(&resp); !errors.Is(err, nil) {
+		log.Fatal(err)
+	}
+	return resp
 }
 
 func isContain(s []string, str string) bool {
