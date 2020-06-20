@@ -112,8 +112,8 @@ func init() {
 }
 
 func main() {
-	const prefixTolal string = "コンブエリア schedules\n"
-	var totalStatusText string = prefixTolal
+	const prefixTolalStatus string = "コンブエリア schedules\n"
+	var totalStatusText string = prefixTolalStatus
 
 	schedules := getSplatoon2GachiSchedules("gachi/schedule")
 	for i, v := range schedules.Result {
@@ -140,7 +140,7 @@ func main() {
 		}
 	}
 
-	if totalStatusText != prefixTolal {
+	if totalStatusText != prefixTolalStatus {
 		toot(totalStatusText, tootNoMention)
 		schedules.WhenTootTotal = time.Now().In(timezone)
 	}
