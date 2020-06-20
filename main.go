@@ -163,7 +163,7 @@ func toot(text string) {
 
 func getSplatoon2GachiSchedules(uri string) splatoonRespSchedules {
 	if oldResp := restoreRespFromFile(); oldResp.Timestamp.Add(time.Hour*12).After(time.Now()) && !oldResp.Timestamp.IsZero() {
-		log.Println("return old response", oldResp.Timestamp, time.Now())
+		log.Println("use old response fetched at", oldResp.Timestamp.In(timezone).Format(tootTimeFormat))
 		return oldResp
 	}
 	log.Println("call API")
