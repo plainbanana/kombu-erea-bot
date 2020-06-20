@@ -37,7 +37,12 @@ const (
 	splatoon2API   = "https://spla2.yuu26.com"
 	chacheFile     = "./api_chache.gob"
 	tootTimeFormat = "2006-01-02 15:04 -07:00"
+
+	tootNoMention tootConfig = "nomention"
+	tootMention   tootConfig = "mention"
 )
+
+type tootConfig string
 
 type splatoonRespSchedules struct {
 	Result []struct {
@@ -65,7 +70,8 @@ type splatoonRespSchedules struct {
 			Secound bool
 		}
 	} `json:"result"`
-	Timestamp time.Time
+	Timestamp     time.Time
+	WhenTootTotal time.Time
 }
 
 func init() {
@@ -106,31 +112,42 @@ func init() {
 }
 
 func main() {
-	var statusText string
+	var totalStatusText string
 
 	schedules := getSplatoon2GachiSchedules("gachi/schedule")
 	for i, v := range schedules.Result {
-		if v.Rule == "ガチエリア" && isContain(v.Maps, "コンブトラック") {
-			if time.Now().Add(time.Hour*2).After(v.StartUtc) && v.EndUtc.After(time.Now()) && !schedules.Result[i].Tooted.First {
-				statusText = statusText + "コンブエリア start at " +
+		if v.Rule == "ガチエリア" && isContain(v.Maps, "コンブトラック") && v.EndUtc.After(time.Now()) {
+			if schedules.WhenTootTotal.Add(time.Hour * 6).Before(time.Now()) {
+				totalStatusText += "コンブエリア schedules\nstart at " +
 					v.StartUtc.In(timezone).Format(tootTimeFormat) + " \n"
-				toot(statusText)
-				schedules.Result[i].Tooted.First = true
-				continue
 			}
 
-			if time.Now().Add(time.Minute*10).After(v.StartUtc) && v.EndUtc.After(time.Now()) && !schedules.Result[i].Tooted.Secound {
-				statusText = statusText + "コンブエリア soon start at " +
+			if time.Now().Add(time.Minute*10).After(v.StartUtc) && !schedules.Result[i].Tooted.Secound {
+				statusText := "コンブエリア soon start at " +
 					v.StartUtc.In(timezone).Format(tootTimeFormat) + " \n"
-				toot(statusText)
+				toot(statusText, tootMention)
 				schedules.Result[i].Tooted.Secound = true
+				schedules.Result[i].Tooted.First = true
+			}
+
+			if time.Now().Add(time.Hour*2).After(v.StartUtc) && !schedules.Result[i].Tooted.First {
+				statusText := "コンブエリア start at " +
+					v.StartUtc.In(timezone).Format(tootTimeFormat) + " \n"
+				toot(statusText, tootMention)
+				schedules.Result[i].Tooted.First = true
 			}
 		}
 	}
+
+	if totalStatusText != "" {
+		toot(totalStatusText, tootNoMention)
+		schedules.WhenTootTotal = time.Now().In(timezone)
+	}
+
 	storeRespToFile(schedules)
 }
 
-func toot(text string) {
+func toot(text string, settings tootConfig) {
 	c := mastodon.NewClient(&mastodon.Config{
 		Server:       mastodonServer,
 		ClientID:     mastodonClientID,
@@ -150,14 +167,27 @@ func toot(text string) {
 		log.Fatal(err)
 	}
 
-	for _, v := range strings.Split(parseAccountsToMention(curFollowers), " ") {
-		if v != "" {
-			c.PostStatus(context.Background(), &mastodon.Toot{
-				Status:     v + " " + text,
-				Visibility: "unlisted",
-			})
-			log.Println("toot", v+" "+text)
+	switch settings {
+	case tootNoMention:
+		t := text
+		c.PostStatus(context.Background(), &mastodon.Toot{
+			Status:     t,
+			Visibility: "unlisted",
+		})
+		log.Println("toot NoMention", t)
+	case tootMention:
+		for _, v := range strings.Split(parseAccountsToMention(curFollowers), " ") {
+			if v != "" {
+				t := v + " " + text
+				c.PostStatus(context.Background(), &mastodon.Toot{
+					Status:     t,
+					Visibility: "unlisted",
+				})
+				log.Println("toot Mention", t)
+			}
 		}
+	default:
+		log.Fatalln("OMG! no settings")
 	}
 }
 
