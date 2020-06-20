@@ -10,5 +10,16 @@ A simple bot for mastodon. This bot toot to followers when gachi splat_zones wil
 
     `% env USERAGENT=XXX MASTODONSERVER=XXX MASTODONCLIENTID=XXX MASTODONCLIENTSECRET=XXX MASTODONAPPYOUREMAIL=XXX MASTODONAPPYOURPASSWORD=XXX go run main.go`
 - Regist binary to crontab
+## environments
+- "USERAGENT"
+- "MASTODONSERVER"
+- "MASTODONAPPWEBSITE"
+- "TOOTHOUR"
+- "TOOTMIN"
+- "TOOTTOTAL"
+- "MASTODONCLIENTID"
+- "MASTODONCLIENTSECRET"
+- "MASTODONAPPYOUREMAIL"
+- "MASTODONAPPYOURPASSWORD"
 # Notice
 This Bot uses [Spla2API](https://spla2.yuu26.com/). You need to set UserAgent which contains program name and your contacts info (default is this repo).
