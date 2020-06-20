@@ -130,9 +130,12 @@ func main() {
 			log.Fatal(err)
 		}
 
-		c.PostStatus(context.Background(), &mastodon.Toot{
-			Status: parseAccountsToMention(curFollowers) + statusText,
-		})
+		for _, v := range strings.Split(parseAccountsToMention(curFollowers), " ") {
+			c.PostStatus(context.Background(), &mastodon.Toot{
+				Status:     v + " " + statusText,
+				Visibility: "unlisted",
+			})
+		}
 	}
 }
 
@@ -184,8 +187,12 @@ func parseAccountsToMention(accounts []*mastodon.Account) string {
 		if v.Bot {
 			continue
 		}
-		s := strings.Split(v.URL, "/")
-		result += s[len(s)-1] + "@" + s[len(s)-2] + " "
+		result += parseAccountToMention(v)
 	}
 	return result
+}
+
+func parseAccountToMention(account *mastodon.Account) string {
+	s := strings.Split(account.URL, "/")
+	return s[len(s)-1] + "@" + s[len(s)-2] + " "
 }
