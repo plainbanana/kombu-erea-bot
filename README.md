@@ -1,4 +1,4 @@
-![build](https://img.shields.io/github/workflow/status/plainbanana/kombu-erea-bot/release) ![release](https://img.shields.io/github/v/release/plainbanana/kombu-erea-bot)
+[![build](https://img.shields.io/github/workflow/status/plainbanana/kombu-erea-bot/release)](https://github.com/plainbanana/kombu-erea-bot/actions?query=workflow%3Arelease) [![release](https://img.shields.io/github/v/release/plainbanana/kombu-erea-bot)](https://github.com/plainbanana/kombu-erea-bot/releases/latest)
 
 # kombu-area-bot
 A simple bot for mastodon. This bot toot to followers when gachi splat_zones will hold at コンブトラック(kombu).
