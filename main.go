@@ -106,7 +106,7 @@ func init() {
 			Scopes:     "read write follow",
 			Website:    mastodonAppWebsite,
 		})
-		if err != nil {
+		if !errors.Is(err, nil) {
 			log.Fatal(err)
 		}
 		fmt.Printf("For example, you can use following environments\n")
@@ -166,7 +166,7 @@ func toot(text string, settings tootConfig) {
 		ClientSecret: mastodonClientSecret,
 	})
 	err := c.Authenticate(context.Background(), mastodonAppYourEmail, mastodonAppYourPassword)
-	if err != nil {
+	if !errors.Is(err, nil) {
 		log.Fatal(err)
 	}
 
@@ -249,7 +249,7 @@ func getFromSpla2API(uri string) splatoonRespSchedules {
 
 func storeRespToFile(b splatoonRespSchedules) {
 	f, err := os.Create(chacheFile)
-	if err != nil {
+	if !errors.Is(err, nil) {
 		log.Fatal(err)
 	}
 	defer f.Close()
@@ -261,7 +261,7 @@ func storeRespToFile(b splatoonRespSchedules) {
 
 func restoreRespFromFile() splatoonRespSchedules {
 	f, err := os.Open(chacheFile)
-	if err != nil {
+	if !errors.Is(err, nil) {
 		return splatoonRespSchedules{}
 	}
 	defer f.Close()
