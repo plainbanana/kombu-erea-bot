@@ -13,6 +13,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,6 +31,10 @@ var (
 	mastodonClientSecret    = ""
 	mastodonAppYourEmail    = ""
 	mastodonAppYourPassword = ""
+
+	TootHourScanDuration   time.Duration = 2
+	TootMinuteScanDuration time.Duration = 10
+	TootTotalScanDuration  time.Duration = 6 // also used as api chaching interval
 
 	timezone = time.FixedZone("Asia/Tokyo", 9*60*60)
 
@@ -96,6 +101,28 @@ func init() {
 		mastodonAppWebsite = s
 	}
 
+	if s := os.Getenv("TOOTHOUR"); s != "" {
+		t, err := strconv.Atoi(s)
+		if errors.Is(err, nil) {
+			tt := time.Duration(int64(t))
+			TootHourScanDuration = tt
+		}
+	}
+	if s := os.Getenv("TOOTMIN"); s != "" {
+		t, err := strconv.Atoi(s)
+		if errors.Is(err, nil) {
+			tt := time.Duration(int64(t))
+			TootMinuteScanDuration = tt
+		}
+	}
+	if s := os.Getenv("TOOTTOTAL"); s != "" {
+		t, err := strconv.Atoi(s)
+		if errors.Is(err, nil) {
+			tt := time.Duration(int64(t))
+			TootTotalScanDuration = tt
+		}
+	}
+
 	mastodonClientID = os.Getenv("MASTODONCLIENTID")
 	mastodonClientSecret = os.Getenv("MASTODONCLIENTSECRET")
 
@@ -129,12 +156,12 @@ func main() {
 	schedules := getSplatoon2GachiSchedules("gachi/schedule")
 	for i, v := range schedules.Result {
 		if v.Rule == "ガチエリア" && isContain(v.Maps, "コンブトラック") && v.EndUtc.After(time.Now()) {
-			if schedules.WhenTootTotal.Add(time.Hour * 6).Before(time.Now()) {
+			if schedules.WhenTootTotal.Add(time.Hour * TootTotalScanDuration).Before(time.Now()) {
 				totalStatusText += "start at " +
 					v.StartUtc.In(timezone).Format(tootTimeFormat) + " \n"
 			}
 
-			if time.Now().Add(time.Minute*10).After(v.StartUtc) && !schedules.Result[i].Tooted.Secound {
+			if time.Now().Add(time.Minute*TootMinuteScanDuration).After(v.StartUtc) && !schedules.Result[i].Tooted.Secound {
 				statusText := "コンブエリア soon start at " +
 					v.StartUtc.In(timezone).Format(tootTimeFormat) + " \n"
 				toot(statusText, tootMention)
@@ -142,7 +169,7 @@ func main() {
 				schedules.Result[i].Tooted.First = true
 			}
 
-			if time.Now().Add(time.Hour*2).After(v.StartUtc) && !schedules.Result[i].Tooted.First {
+			if time.Now().Add(time.Hour*TootHourScanDuration).After(v.StartUtc) && !schedules.Result[i].Tooted.First {
 				statusText := "コンブエリア start at " +
 					v.StartUtc.In(timezone).Format(tootTimeFormat) + " \n"
 				toot(statusText, tootMention)
@@ -204,7 +231,7 @@ func toot(text string, settings tootConfig) {
 }
 
 func getSplatoon2GachiSchedules(uri string) splatoonRespSchedules {
-	if oldResp := restoreRespFromFile(); oldResp.Timestamp.Add(time.Hour*12).After(time.Now()) && !oldResp.Timestamp.IsZero() {
+	if oldResp := restoreRespFromFile(); oldResp.Timestamp.Add(time.Hour*TootTotalScanDuration).After(time.Now()) && !oldResp.Timestamp.IsZero() {
 		log.Println("use old response fetched at", oldResp.Timestamp.In(timezone).Format(tootTimeFormat))
 		return oldResp
 	}
