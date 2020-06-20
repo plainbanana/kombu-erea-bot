@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -31,11 +32,12 @@ var (
 	mastodonAppYourPassword = ""
 
 	timezone = time.FixedZone("Asia/Tokyo", 9*60*60)
+
+	chacheFile = "api_chache.gob"
 )
 
 const (
 	splatoon2API   = "https://spla2.yuu26.com"
-	chacheFile     = "./api_chache.gob"
 	tootTimeFormat = "2006-01-02 15:04 -07:00"
 
 	tootNoMention tootConfig = "nomention"
@@ -75,6 +77,15 @@ type splatoonRespSchedules struct {
 }
 
 func init() {
+	exe, err := os.Executable()
+	if !errors.Is(err, nil) {
+		log.Fatal(err)
+	}
+	if p := filepath.Dir(exe); !strings.Contains(p, "go-build") {
+		chacheFile = filepath.Join(p, chacheFile)
+	}
+	log.Println("chache file is", chacheFile)
+
 	if s := os.Getenv("USERAGENT"); s != "" {
 		userAgent = s
 	}
