@@ -34,8 +34,9 @@ var (
 )
 
 const (
-	splatoon2API = "https://spla2.yuu26.com"
-	chacheFile   = "./api_chache.gob"
+	splatoon2API   = "https://spla2.yuu26.com"
+	chacheFile     = "./api_chache.gob"
+	tootTimeFormat = "2006-01-02 15:04 -07:00"
 )
 
 type splatoonRespSchedules struct {
@@ -112,7 +113,7 @@ func main() {
 		if v.Rule == "ガチエリア" && isContain(v.Maps, "コンブトラック") {
 			if time.Now().Add(time.Hour*2).After(v.StartUtc) && v.EndUtc.After(time.Now()) && !schedules.Result[i].Tooted.First {
 				statusText = statusText + "コンブエリア start at " +
-					v.StartUtc.In(timezone).Format("2006-01-02 15:03 -07:00") + " \n"
+					v.StartUtc.In(timezone).Format(tootTimeFormat) + " \n"
 				toot(statusText)
 				schedules.Result[i].Tooted.First = true
 				continue
@@ -120,7 +121,7 @@ func main() {
 
 			if time.Now().Add(time.Minute*10).After(v.StartUtc) && v.EndUtc.After(time.Now()) && !schedules.Result[i].Tooted.Secound {
 				statusText = statusText + "コンブエリア soon start at " +
-					v.StartUtc.In(timezone).Format("2006-01-02 15:03 -07:00") + " \n"
+					v.StartUtc.In(timezone).Format(tootTimeFormat) + " \n"
 				toot(statusText)
 				schedules.Result[i].Tooted.Secound = true
 			}
