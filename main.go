@@ -112,13 +112,14 @@ func init() {
 }
 
 func main() {
-	var totalStatusText string
+	const prefixTolal string = "コンブエリア schedules\n"
+	var totalStatusText string = prefixTolal
 
 	schedules := getSplatoon2GachiSchedules("gachi/schedule")
 	for i, v := range schedules.Result {
 		if v.Rule == "ガチエリア" && isContain(v.Maps, "コンブトラック") && v.EndUtc.After(time.Now()) {
 			if schedules.WhenTootTotal.Add(time.Hour * 6).Before(time.Now()) {
-				totalStatusText += "コンブエリア schedules\nstart at " +
+				totalStatusText += "start at " +
 					v.StartUtc.In(timezone).Format(tootTimeFormat) + " \n"
 			}
 
@@ -139,7 +140,7 @@ func main() {
 		}
 	}
 
-	if totalStatusText != "" {
+	if totalStatusText != prefixTolal {
 		toot(totalStatusText, tootNoMention)
 		schedules.WhenTootTotal = time.Now().In(timezone)
 	}
