@@ -1,5 +1,6 @@
-# kombu-area-bot
 ![build](https://img.shields.io/github/workflow/status/plainbanana/kombu-erea-bot/release) ![release](https://img.shields.io/github/v/release/plainbanana/kombu-erea-bot)
+
+# kombu-area-bot
 A simple bot for mastodon. This bot toot to followers when gachi splat_zones will hold at コンブトラック(kombu).
 # Usage 
 - get new ClientID and ClientSecret
